@@ -1,0 +1,50 @@
+# Throwaway check, not for merge: the non-publishing half of release.yml,
+# to see that uv installed with pip builds the package. No secret, no publish.
+name: tmp uv build check
+
+on:
+  push:
+    branches: [ tmp-ci-run ]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4.4.0
+      with:
+        submodules: 'recursive'
+        persist-credentials: false
+
+    - name: Set up Python
+      uses: actions/setup-python@v5.6.0
+      with:
+        python-version: '3.10'
+        cache: 'pip'
+
+    - name: Install uv
+      run: pip install uv
+
+    - name: Where uv landed
+      run: |
+        which uv
+        uv --version
+
+    - name: Build Seeker HUD frontend
+      uses: actions/setup-node@v4.4.0
+      with:
+        node-version: '20'
+
+    - name: Compile frontend into the package
+      working-directory: ui
+      run: |
+        npm ci
+        npm run build
+        test -f ../src/skill_seekers/web/dist/index.html
+
+    - name: Build package
+      run: |
+        uv build
+        ls -la dist
